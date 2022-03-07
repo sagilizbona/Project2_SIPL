@@ -1,0 +1,8 @@
+./mmskeleton-master/tools/mmskl
+mmskeleton-master/tools/mmskl
+mmskeleton.egg-info/PKG-INFO
+mmskeleton.egg-info/SOURCES.txt
+mmskeleton.egg-info/dependency_links.txt
+mmskeleton.egg-info/not-zip-safe
+mmskeleton.egg-info/requires.txt
+mmskeleton.egg-info/top_level.txt
