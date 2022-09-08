@@ -178,7 +178,7 @@ def test(test_cfg,
             score = meta['score'].numpy()
 
             num_images = input.size(0)
-            preds, maxvals = get_final_preds(test_cfg.post_process,
+            preds, maxvals = get_final_preds(test_cfg.delete_temp_dir,
                                              output.detach().cpu().numpy(), c,
                                              s)
 

@@ -202,7 +202,7 @@ def inference_recognizer(model, video, outputs=None, as_tensor=True, **kwargs):
 
     top5_label = score_sorted[:5]
     top10_label = score_sorted[:10]
-    selected_features = [score_tuples[525],score_tuples[265],score_tuples[516]]
+    selected_features = [score_tuples[265], score_tuples[516]]  # score_tuples[525],
     if outputs:
         return top5_label, returned_features
     return top5_label, top10_label, selected_features

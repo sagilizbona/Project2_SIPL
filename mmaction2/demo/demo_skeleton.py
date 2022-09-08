@@ -238,11 +238,19 @@ def main():
         vis_pose_result(pose_model, frame_paths[i], pose_results[i])
         for i in range(num_frame)
     ]
-    for frame in vis_frames:
-        cv2.putText(frame, action_label, (10, 30), FONTFACE, FONTSCALE,
-                    FONTCOLOR, THICKNESS, LINETYPE)
+    # for frame in vis_frames:
+    #     cv2.putText(frame, action_label, (10, 30), FONTFACE, FONTSCALE,
+    #                 FONTCOLOR, THICKNESS, LINETYPE)
 
+    check = [x[:, :, ::-1] for x in vis_frames]
     vid = mpy.ImageSequenceClip([x[:, :, ::-1] for x in vis_frames], fps=24)
+
+    frames = int(vid.fps * vid.duration)
+
+    for i in range(1, frames+1, 1):
+        frame = vid.get_frame(i)
+        bbox = pose_results[i-1]
+
     vid.write_videofile(args.out_filename, remove_temp=True)
 
     tmp_frame_dir = osp.dirname(frame_paths[0])
