@@ -1,1 +1,0 @@
-from .simplehead import SimpleSkeletonHead
