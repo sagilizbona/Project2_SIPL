@@ -1,17 +1,21 @@
+import torch
+
 from mmaction.apis import inference_recognizer, init_recognizer
 import time
 import cv2
 import numpy as np
 import os
 import shutil
-from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
+# from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
+import imageio_ffmpeg
+import subprocess as sp
 
 detection_list = []
 texting_values = []
 looking_values = []
 talking_values = []
 
-talk_high_prefix = "database/with_phone/high_pos/talk/trim/"
+talk_high_prefix = "database/with_phone/high_pos/talk/"  # trim/"
 talk_high_num = 8
 no_high_prefix = "database/no_phone/high_pos/"  # 17 videos
 no_high_num = 17
@@ -41,9 +45,9 @@ global avg_talk
 def get_videos():
     videos = []
 
-    # Talk High
+    # # Talk High
     # for i in range(1, talk_high_num+1, 1):
-    #     video_name = talk_high_prefix + str(i) + "_Trim.mp4"
+    #     video_name = talk_high_prefix + str(i) + ".mp4"
     #     videos.append(video_name)
 
     # # No High
@@ -51,12 +55,12 @@ def get_videos():
     #     video_name = no_high_prefix + str(i) + ".mp4"
     #     videos.append(video_name)
 
-    # Talk Low
-    for i in range(1, num_low_trim_talk+1, 1):
-        video_name = low_trim_talk + str(i) + ".mp4"
-        videos.append(video_name)
+    # # Talk Low
+    # for i in range(1, num_low_trim_talk+1, 1):
+    #     video_name = low_trim_talk + str(i) + ".mp4"
+    #     videos.append(video_name)
 
-    # # No Low
+    # No Low
     # for i in range(1, no_low_num + 1, 1):
     #     video_name = no_low_prefix + str(i) + ".mp4"
     #     videos.append(video_name)
@@ -69,8 +73,10 @@ def get_videos():
 
     # # Text Low
     # for i in range(1, text_low_num+1, 1):
-    #     video_name = text_low_prefix + str(i) + "_Trim.mp4"
+    #     video_name = text_low_prefix + str(i) + ".mp4"
     #     videos.append(video_name)
+
+    videos.append("C:\\Users\\user\\Pictures\\snowboard.mp4")
     return videos
 
 
@@ -95,8 +101,12 @@ def pre_process(vid):
         print(f"Directory {trimmed_vid_path} can not be created")
     # Split videos
     for start_time, end_time in zip(times[:-1], times[1:]):
-        ffmpeg_extract_subclip(vid, start_time, end_time,
-                               targetname=trimmed_vid_path + str(start_time) + ".mp4")
+        # ffmpeg_extract_subclip(vid, start_time, end_time,
+                               # targetname=trimmed_vid_path + str(start_time) + ".mp4")
+        ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
+
+        sp.run([ffmpeg_path, '-ss', str(start_time), '-to', str(end_time), '-i', vid,
+                trimmed_vid_path + str(start_time) + ".mp4", '-y'], stderr=sp.DEVNULL, stdout=sp.DEVNULL)
         trim_video_list.append(trimmed_vid_path + str(start_time) + ".mp4")
 
     return trim_video_list
@@ -112,7 +122,9 @@ def delete_temp_dir():
     trimmed_vid_path = os.path.join(os.getcwd(), "Temp\\")
     try:
         shutil.rmtree(trimmed_vid_path)
+        print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
         print("Temp directory has deleted successfully")
+        print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
     except OSError as error:
         print(f"Directory {trimmed_vid_path} can not be deleted")
 
@@ -149,27 +161,31 @@ def post_process(labels, results, video):
     global avg_look
     global avg_talk
     for result in results:
-        # if result[0] == 'texting':
-        #     if result[1] > 5.5:
+        if result[0] == 'texting':
+            print(result)
+            if result[1] > 5.5:
+                detection = True
+            # avg_text = avg_text + result[1]
+
+        # if result[0] == 'talking on cell phone':
+        #     print(result)
+        #     if result[1] > 5:
         #         detection = True
-        #     avg_text = avg_text + result[1]
+        #     avg_talk = avg_talk + result[1]
 
-        if result[0] == 'talking on cell phone':
-            if result[1] > 2:
-                detection = True
-            avg_talk = avg_talk + result[1]
-
-        if result[0] == 'looking at phone':
-            if result[1] > 3:
-                detection = True
-            avg_talk = avg_talk + result[1]
-
-        print(result)
-        if detection:
-            detection_list.append("detect")
-            print(str(video) + ": DETECTION")
-        else:
-            detection_list.append("not detect")
+        # if result[0] == 'looking at phone':
+        #     print(result)
+        #     if result[1] > 4.5:
+        #         detection = True
+        #     avg_talk = avg_talk + result[1]
+        #
+        # print(result)
+    return detection
+    # if detection:
+    #     detection_list.append("detect")
+    #     print(str(video) + ": DETECTION")
+    # else:
+    #     detection_list.append("not detect")
 
 
 
@@ -195,15 +211,22 @@ def main():
     model, labels = init_system()
     for video in videos:
         trim_video_list = pre_process(video)
+        final_detection = False
         for trim_video in trim_video_list:
-            # start_time = time.time()
+            start_time = time.time()
             top5, top10, scores = inference_recognizer(model, trim_video)
-            # end_time = time.time()
-            # print(end_time - start_time)
+            end_time = time.time()
+            print(end_time - start_time)
 
             print(str(trim_video))
-            post_process(labels, scores, trim_video)
-
+            detection = post_process(labels, scores, trim_video)
+            if detection is True:
+                final_detection = True
+        if final_detection:
+            detection_list.append("detect")
+            print(str(video) + ": DETECTION")
+        else:
+            detection_list.append("not detect")
         delete_temp_dir()
 
 
